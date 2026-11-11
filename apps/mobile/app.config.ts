@@ -79,10 +79,10 @@ const RELEASE_ASSETS = {
 
 const VARIANT_CONFIG = {
   development: {
-    appName: "T3 Code Dev",
-    scheme: "t3code-dev",
+    appName: "T3 Haptics Test",
+    scheme: "t3code-haptics",
     iosBundleIdentifier: "com.t3tools.t3code.dev",
-    androidPackage: "com.t3tools.t3code.dev",
+    androidPackage: "com.t3tools.t3code.hapticstest",
     relyingParty: "clerk.t3.codes",
     assets: DEVELOPMENT_ASSETS,
   },

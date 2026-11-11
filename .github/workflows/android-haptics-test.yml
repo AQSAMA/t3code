@@ -1,0 +1,53 @@
+name: Android haptics test APK
+on:
+  push:
+    branches: [test/android-haptics]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      APP_VARIANT: development
+      T3CODE_MOBILE_UPDATES_ENABLED: "0"
+      NODE_OPTIONS: --max-old-space-size=4096
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v6
+      - name: Free disk space
+        run: sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android/sdk/ndk /usr/local/share/boost
+      - uses: ./.github/actions/setup-ci-deps
+        with:
+          install-args: --filter=@t3tools/mobile... --filter=@t3tools/scripts...
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v5
+      - name: Generate the standalone test application
+        working-directory: apps/mobile
+        run: vp exec expo prebuild --clean --platform android --no-install
+      - name: Build APK with its JavaScript bundle
+        working-directory: apps/mobile/android
+        run: ./gradlew :app:assembleRelease -PreactNativeArchitectures=arm64-v8a,x86_64 --max-workers=2 --no-daemon -x lintVitalAnalyzeRelease -x lintVitalRelease
+      - name: Verify APK identity, bundle, and signing
+        run: |
+          apk=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
+          aapt=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)
+          "$aapt" dump badging "$apk" | head -n 4
+          "$aapt" dump badging "$apk" | grep "package: name='com.t3tools.t3code.hapticstest'"
+          unzip -l "$apk" | grep assets/index.android.bundle
+          apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
+          "$apksigner" verify "$apk"
+          cp "$apk" t3-haptics-test.apk
+          sha256sum t3-haptics-test.apk > t3-haptics-test.sha256
+      - uses: actions/upload-artifact@v6
+        with:
+          name: t3-haptics-test
+          path: |
+            t3-haptics-test.apk
+            t3-haptics-test.sha256
+          retention-days: 14
