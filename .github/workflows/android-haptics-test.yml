@@ -25,7 +25,6 @@ jobs:
         with:
           distribution: temurin
           java-version: "17"
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v5
       - name: Generate the standalone test application
         working-directory: apps/mobile
@@ -37,7 +36,7 @@ jobs:
         run: |
           apk=apps/mobile/android/app/build/outputs/apk/release/app-release.apk
           aapt=$(find "$ANDROID_HOME/build-tools" -name aapt -type f | sort -V | tail -n 1)
-          "$aapt" dump badging "$apk" | head -n 4
+          "$aapt" dump badging "$apk" | sed -n '1,4p'
           "$aapt" dump badging "$apk" | grep "package: name='com.t3tools.t3code.hapticstest'"
           unzip -l "$apk" | grep assets/index.android.bundle
           apksigner=$(find "$ANDROID_HOME/build-tools" -name apksigner -type f | sort -V | tail -n 1)
